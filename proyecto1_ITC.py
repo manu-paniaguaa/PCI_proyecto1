@@ -23,3 +23,40 @@ SALIDAS:
     salientes dentro de tu inventario ordenados de mayor a menor.
         
 """
+
+import tkinter as tk #Documentation: https://docs.python.org/3/library/tk.html
+from tkinter import filedialog
+import pandas as pd#Documentation: https://pandas.pydata.org/docs/
+import streamlit #Documentation: https://docs.streamlit.io/
+import openpyxl #Documentation: https://openpyxl.readthedocs.io/en/stable/ 
+from openpyxl import load_workbook
+from openpyxl import workbook
+
+root = tk.Tk()
+root.withdraw()
+
+file = filedialog.askopenfilename( ### pops up the file selector window from tkinter
+    title="Select a file", ### the name that gives the user the instruction.
+    filetypes=[("Archivos de Excel", "*.xlsx * .xls")] ### discriminates the files that are slectable 
+)
+
+# We validate that the file is an excel file
+
+if file.endswith((".xlsx", ".xls")): ### only continues the programm if the file is in the correct type
+    try:
+        data = pd.read_excel(file) ### data to pandas to forward analisys
+        workbook = load_workbook(file) ### variable saved with the excel file selected
+        work_sheet = workbook.active ### gets the active sheet inside the excel file
+        for line in range(2,work_sheet.max_row + 1): ### Writes the formula below in every cell that has the info requiered
+            margin = f"=(B{line}-C{line})/B{line}" #### is the formula that is going to be inserted in every cell until the last cell with data in order to get the margin
+            work_sheet[f"D{line}"] = margin ### adds the formula into the 3 column 
+            work_sheet[f"D{line}"].number_format = '0.00%' ### turns the float number into percetage format
+        work_sheet["D1"] = "Margen" ### names the first cell of the column as "Margen"
+        workbook.save("resultadoprueba1.xlsx") ### saves the modified document under the name established
+    except Exception as error:
+        print(f"An error has occurred :{error}") ### in case file has a problem with reading prints the error to the user
+else:
+    print("The file is not compatible") ### in case the file selected is not from the specified type.
+
+
+        
