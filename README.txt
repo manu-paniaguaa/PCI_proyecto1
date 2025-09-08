@@ -7,3 +7,7 @@ Descripción(Contexto):
     para extraer margenes y mostrar tus mejores productos solo con subir la plantilla con la informacion en el formato especificado, 
     resaltara resultados fuera de lo común. Esto permitira a los usuarios tener mayor control sobre sus ventas y productos y 
     levantar banderas rojas para tomar las decisiones pertinentes.
+    IMPORTANTE:
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!! ESTE CÓDIGO SE DEBE CORRER EJECUTANDO EN LA TERMINAL EL COMANDO "streamlit run Proyecto1_ITC.py" !!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
