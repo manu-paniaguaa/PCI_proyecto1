@@ -45,7 +45,7 @@ st.title("Gráfico de Margen de Productos") #Titulo de la página
 uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"]) #Se encarga de solicitar al usuario el archivo excel, previamente se utilizaba Tkinter pero por problemas de compatibilidad se recurrió al uso completo de streamlit para el upload 
 #también asegura que solo se suban archivos xlsx o xls. 
 
-def conditional_format(val): #esto es el formato condicional para mostrar al usuario si los margenes estan bien 
+def conditional_format(val): #esto es el formato condicional para mostrar al usuario si los margenes estan bien, a petición del usuario se pueden cambiar los porcentajes
     if val >= 25:
         color = 'green' #si el margen es mayor a 25% se pinta verde
     elif val >= 15:
@@ -57,8 +57,8 @@ def conditional_format(val): #esto es el formato condicional para mostrar al usu
 def calcular_margenes():
     if uploaded_file is not None: #solo corre el código si se subio un archivo
         try:
-            data = pd.read_excel(uploaded_file) #lee con pandas el archivo excel y lo convierte en un archivo de data manejable 
-            data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo
+            data = pd.read_excel(uploaded_file) #lee con pandas el archivo excel y lo convierte en un archivo de data manejable (dataframe)
+            data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo (margen = precio-costo/precio)
             data["Margen %"] = data["Margen %"] * 100 #multiplica el resultado por 100 para que sea el porcentaje
             data["Margen %"] = data["Margen %"].round(1) #redondea a 1 cifra
             output = BytesIO() #crea un archivo en blanco que no se guarda en la memoria para posteriormente ahi guardar el libro de excel modificado 
@@ -74,5 +74,7 @@ def calcular_margenes():
             st.plotly_chart(grafico, use_container_width=True) #inserta el grafico en el sitio web
         except Exception as error: #si hay un error muestra el error dentro de streamlit
             st.error(f"Ocurrió un error: {error}")
+    else:
+        print("You didn't select any file.")
 
 calcular_margenes()
