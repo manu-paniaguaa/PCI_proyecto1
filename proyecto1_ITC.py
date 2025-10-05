@@ -46,18 +46,33 @@ uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "x
 #también asegura que solo se suban archivos xlsx o xls. 
 
 def conditional_format(val): #esto es el formato condicional para mostrar al usuario si los margenes estan bien, a petición del usuario se pueden cambiar los porcentajes
+    colors = ['green', 'yellow', 'red'] #Lista para cumplir con la solicitud del profe
     if val >= 25:
-        color = 'green' #si el margen es mayor a 25% se pinta verde
+        color = colors[0] #si el margen es mayor a 25% se pinta verde
     elif val >= 15:
-        color = 'yellow' #si el margen es mayor a 20% se pinta amarillo
+        color = colors[1] #si el margen es mayor a 20% se pinta amarillo
     else:
-        color = 'red' #si el margen es menor se pinta rojo 
+        color = colors[2] #si el margen es menor se pinta rojo 
     return f'background-color: {color}' #nos devuelve la funcion necesaria para ejecutar el codigo en la configuracion del datafframe
 
 def calcular_margenes():
     if uploaded_file is not None: #solo corre el código si se subio un archivo
         try:
-            data = pd.read_excel(uploaded_file) #lee con pandas el archivo excel y lo convierte en un archivo de data manejable (dataframe)
+            intentos = 0 #Inicia el conteo de intentos de subida de archivo
+            max_intentos = 3 #marca el maximo de intentos permitidos
+            archivo_valido = False # valida que el archivo sea valido para el condicional
+            while intentos < max_intentos and not archivo_valido:
+                data = pd.read_excel(uploaded_file) #lee con pandas el archivo excel y lo convierte en un archivo de data manejable (dataframe)
+                columnas_necesarias = ["Producto", "Precio Venta(sin IVA)", "Costo(sin IVA)"] #espera estas columnas con estos nombres
+                if all(col in data.columns for col in columnas_necesarias): #si se cumplen las columnas necesarias con los nombres procede
+                    archivo_valido = True #El archivo pasa a ser valido y continua el ciclo
+                else: #Sino
+                    intentos += 1 #se suma uno a la lista de intebntos
+                    st.warning(f"Archivo no válido. Intento {intentos} de {max_intentos}. Verifica las columnas.") #Muestra el mensaje al usuario
+
+                    if intentos == max_intentos: # cuando se alcanza el maximo de intentos
+                        st.error("Número máximo de intentos alcanzado. Verifica tu archivo.") # te dice que verifiques el archivo ya que es un problema tuyo y no del sistema
+                        return  # salir sin procesar más
             data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo (margen = precio-costo/precio)
             data["Margen %"] = data["Margen %"] * 100 #multiplica el resultado por 100 para que sea el porcentaje
             data["Margen %"] = data["Margen %"].round(1) #redondea a 1 cifra
@@ -75,6 +90,6 @@ def calcular_margenes():
         except Exception as error: #si hay un error muestra el error dentro de streamlit
             st.error(f"Ocurrió un error: {error}")
     else:
-        print("You didn't select any file.")
+        print("No se subió ningun archivo.")
 
 calcular_margenes()
