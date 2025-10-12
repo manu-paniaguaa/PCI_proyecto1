@@ -44,6 +44,21 @@ st.title("Gráfico de Margen de Productos") #Titulo de la página
 
 uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"]) #Se encarga de solicitar al usuario el archivo excel, previamente se utilizaba Tkinter pero por problemas de compatibilidad se recurrió al uso completo de streamlit para el upload 
 #también asegura que solo se suban archivos xlsx o xls. 
+def margen(data):
+    data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo (margen = precio-costo/precio)
+    data["Margen %"] = data["Margen %"] * 100 #multiplica el resultado por 100 para que sea el porcentaje
+    data["Margen %"] = data["Margen %"].round(1) #redondea a 1 cifra
+    output = BytesIO() #crea un archivo en blanco que no se guarda en la memoria para posteriormente ahi guardar el libro de excel modificado 
+    with pd.ExcelWriter(output, engine='openpyxl') as writer: #nos permite sobreescribir el archivo que subimos
+        data.to_excel(writer, index=False) #importa la informacion del dataframe al excel para graficar y mostrar
+    output.seek(0) #reestablece el inicio del archivo en el inicio el libro para leer toda la informacion, de otro modo, intentaria leer el archivo en donde lo dejo la escritura que es el final de las filas, y a partir de ahi no hay nada, por ello se hace esto.
+    st.dataframe(data.head(10).style.applymap(conditional_format, subset=["Margen %"])) #escribe una tabla para visualizar la información solo muestra las primeras 10 filas, adicional establece formato condicional a las celdas de margen.
+    grafico = px.bar( #grafico de barras integrado en streamlit por plotly 
+        data, #muestra la informacuon de data
+        x="Producto", #en el eje x muestra el producto
+        y=[f"Precio Venta(sin IVA)", "Costo(sin IVA)", "Margen %"], #eje y muestra la info del producto apilada
+    )
+    return (grafico)
 
 def conditional_format(val): #esto es el formato condicional para mostrar al usuario si los margenes estan bien, a petición del usuario se pueden cambiar los porcentajes
     colors = ['green', 'yellow', 'red'] #Lista para cumplir con la solicitud del profe
@@ -73,20 +88,8 @@ def calcular_margenes():
                     if intentos == max_intentos: # cuando se alcanza el maximo de intentos
                         st.error("Número máximo de intentos alcanzado. Verifica tu archivo.") # te dice que verifiques el archivo ya que es un problema tuyo y no del sistema
                         return  # salir sin procesar más
-            data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo (margen = precio-costo/precio)
-            data["Margen %"] = data["Margen %"] * 100 #multiplica el resultado por 100 para que sea el porcentaje
-            data["Margen %"] = data["Margen %"].round(1) #redondea a 1 cifra
-            output = BytesIO() #crea un archivo en blanco que no se guarda en la memoria para posteriormente ahi guardar el libro de excel modificado 
-            with pd.ExcelWriter(output, engine='openpyxl') as writer: #nos permite sobreescribir el archivo que subimos
-                data.to_excel(writer, index=False) #importa la informacion del dataframe al excel para graficar y mostrar
-            output.seek(0) #reestablece el inicio del archivo en el inicio el libro para leer toda la informacion, de otro modo, intentaria leer el archivo en donde lo dejo la escritura que es el final de las filas, y a partir de ahi no hay nada, por ello se hace esto.
-            st.dataframe(data.head(10).style.applymap(conditional_format, subset=["Margen %"])) #escribe una tabla para visualizar la información solo muestra las primeras 10 filas, adicional establece formato condicional a las celdas de margen.
-            grafico = px.bar( #grafico de barras integrado en streamlit por plotly 
-                data, #muestra la informacuon de data
-                x="Producto", #en el eje x muestra el producto
-                y=[f"Precio Venta(sin IVA)", "Costo(sin IVA)", "Margen %"], #eje y muestra la info del producto apilada
-            )
-            st.plotly_chart(grafico, use_container_width=True) #inserta el grafico en el sitio web
+            print(data)
+            st.plotly_chart(margen(data), use_container_width=True) #inserta el grafico en el sitio web
         except Exception as error: #si hay un error muestra el error dentro de streamlit
             st.error(f"Ocurrió un error: {error}")
     else:
