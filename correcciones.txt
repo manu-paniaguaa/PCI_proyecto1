@@ -1,2 +1,4 @@
 A peticion del profesor, subo este archivo para solicitar reevaluación de mi proyecto en las competencias de "While", "uso de operadores aritmeticos" y "funciones"
 los cuales se encuentran presentes en mi proyecto y estan evaluados con 0 puntos.
+Se modifico el codigo para cumplir con las normativas, y se agregaron mas funciones, ademas de main para mantener orden, se elimino la descripcion de
+linea por linea, y se describe la funcionalidad de la funcion en las primeras lineas generalizada.

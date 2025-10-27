@@ -32,67 +32,142 @@ Se tuvieron que hacer cambios debido a incompatibilidades entre las librerias
 ## para ejecutar insertar en terminal: streamlit run Proyecto1_ITC.py ##
 ########################################################################
 
+"""Documentaciones de librerias:
+    - pandas: https://pandas.pydata.org/docs/
+    - streamlit: https://docs.streamlit.io/
+    - io: https://docs.python.org/3/library/io.html
+    - plotly: https://plotly.com/python/
+"""
+import pandas as pd 
+import streamlit as st
+from io import BytesIO
+import plotly.express as px
 
-import pandas as pd #Documentation: https://pandas.pydata.org/docs/
-import streamlit as st #Documentation: https://docs.streamlit.io/
-from io import BytesIO # Documentation: https://docs.python.org/3/library/io.html
-import plotly.express as px #Documentation: https://plotly.com/graphing-libraries/
-
-st.set_page_config(page_title="Proyecto ITC", layout='wide') #Se crea el sitio web con titulo de pestaña y el formato de pantalla completa
-st.title("Gráfico de Margen de Productos") #Titulo de la página
+MARGEN_VERDE = 25
+MARGEN_AMARILLO = 15
+MAX_INTENTOS = 3
+COLORES = ['green', 'yellow', 'red']
+COLUMNAS_NECESARIAS = ["Producto", "Precio Venta(sin IVA)", "Costo(sin IVA)"]
 
 
-uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"]) #Se encarga de solicitar al usuario el archivo excel, previamente se utilizaba Tkinter pero por problemas de compatibilidad se recurrió al uso completo de streamlit para el upload 
-#también asegura que solo se suban archivos xlsx o xls. 
-def margen(data):
-    data["Margen %"] = (data["Precio Venta(sin IVA)"] - data["Costo(sin IVA)"]) / data["Precio Venta(sin IVA)"] #agrega la columna margen y hace el calculo (margen = precio-costo/precio)
-    data["Margen %"] = data["Margen %"] * 100 #multiplica el resultado por 100 para que sea el porcentaje
-    data["Margen %"] = data["Margen %"].round(1) #redondea a 1 cifra
-    output = BytesIO() #crea un archivo en blanco que no se guarda en la memoria para posteriormente ahi guardar el libro de excel modificado 
-    with pd.ExcelWriter(output, engine='openpyxl') as writer: #nos permite sobreescribir el archivo que subimos
-        data.to_excel(writer, index=False) #importa la informacion del dataframe al excel para graficar y mostrar
-    output.seek(0) #reestablece el inicio del archivo en el inicio el libro para leer toda la informacion, de otro modo, intentaria leer el archivo en donde lo dejo la escritura que es el final de las filas, y a partir de ahi no hay nada, por ello se hace esto.
-    st.dataframe(data.head(10).style.applymap(conditional_format, subset=["Margen %"])) #escribe una tabla para visualizar la información solo muestra las primeras 10 filas, adicional establece formato condicional a las celdas de margen.
-    grafico = px.bar( #grafico de barras integrado en streamlit por plotly 
-        data, #muestra la informacuon de data
-        x="Producto", #en el eje x muestra el producto
-        y=[f"Precio Venta(sin IVA)", "Costo(sin IVA)", "Margen %"], #eje y muestra la info del producto apilada
+def configurar_pagina():
+    """Configura el título y el layout de la página de Streamlit."""
+    st.set_page_config(page_title="Proyecto ITC", layout='wide')
+    st.title("Gráfico de Margen de Productos")
+
+
+def calcular_margen(datos):
+    """
+    Calcula el margen porcentual de cada producto.
+    
+    El margen se calcula como: (Precio - Costo) / Precio * 100
+    """
+    datos["Margen %"] = ((datos["Precio Venta(sin IVA)"] 
+                          - datos["Costo(sin IVA)"]) 
+                         / datos["Precio Venta(sin IVA)"])
+    datos["Margen %"] = datos["Margen %"] * 100.0
+    datos["Margen %"] = datos["Margen %"].round(1)
+    return datos
+
+
+def formato_condicional(valor):
+    """
+    Aplica formato condicional según el valor del margen.
+    
+    Verde: >= 25%
+    Amarillo: >= 15%
+    Rojo: < 15%
+    """
+    
+    if valor >= MARGEN_VERDE:
+        color = COLORES[0]
+    elif valor >= MARGEN_AMARILLO:
+        color = COLORES[1]
+    else:
+        color = COLORES[2]
+    
+    return f'background-color: {color}'
+
+
+def crear_grafico(datos):
+    """Crea un gráfico de barras con la información de productos."""
+    grafico = px.bar(
+        datos,
+        x="Producto",
+        y=["Precio Venta(sin IVA)", "Costo(sin IVA)", "Margen %"]
     )
-    return (grafico)
+    return grafico
 
-def conditional_format(val): #esto es el formato condicional para mostrar al usuario si los margenes estan bien, a petición del usuario se pueden cambiar los porcentajes
-    colors = ['green', 'yellow', 'red'] #Lista para cumplir con la solicitud del profe
-    if val >= 25:
-        color = colors[0] #si el margen es mayor a 25% se pinta verde
-    elif val >= 15:
-        color = colors[1] #si el margen es mayor a 20% se pinta amarillo
-    else:
-        color = colors[2] #si el margen es menor se pinta rojo 
-    return f'background-color: {color}' #nos devuelve la funcion necesaria para ejecutar el codigo en la configuracion del datafframe
 
-def calcular_margenes():
-    if uploaded_file is not None: #solo corre el código si se subio un archivo
-        try:
-            intentos = 0 #Inicia el conteo de intentos de subida de archivo
-            max_intentos = 3 #marca el maximo de intentos permitidos
-            archivo_valido = False # valida que el archivo sea valido para el condicional
-            while intentos < max_intentos and not archivo_valido:
-                data = pd.read_excel(uploaded_file) #lee con pandas el archivo excel y lo convierte en un archivo de data manejable (dataframe)
-                columnas_necesarias = ["Producto", "Precio Venta(sin IVA)", "Costo(sin IVA)"] #espera estas columnas con estos nombres
-                if all(col in data.columns for col in columnas_necesarias): #si se cumplen las columnas necesarias con los nombres procede
-                    archivo_valido = True #El archivo pasa a ser valido y continua el ciclo
-                else: #Sino
-                    intentos += 1 #se suma uno a la lista de intebntos
-                    st.warning(f"Archivo no válido. Intento {intentos} de {max_intentos}. Verifica las columnas.") #Muestra el mensaje al usuario
+def mostrar_datos_y_grafico(datos):
+    """Muestra la tabla de datos y el gráfico en la interfaz."""
+    datos_con_margen = calcular_margen(datos)
+    
+    st.dataframe(
+        datos_con_margen.head(10).style.applymap(
+            formato_condicional,
+            subset=["Margen %"]
+        )
+    )
+    
+    grafico = crear_grafico(datos_con_margen)
+    st.plotly_chart(grafico, use_container_width=True)
 
-                    if intentos == max_intentos: # cuando se alcanza el maximo de intentos
-                        st.error("Número máximo de intentos alcanzado. Verifica tu archivo.") # te dice que verifiques el archivo ya que es un problema tuyo y no del sistema
-                        return  # salir sin procesar más
-            print(data)
-            st.plotly_chart(margen(data), use_container_width=True) #inserta el grafico en el sitio web
-        except Exception as error: #si hay un error muestra el error dentro de streamlit
-            st.error(f"Ocurrió un error: {error}")
-    else:
-        print("No se subió ningun archivo.")
 
-calcular_margenes()
+def validar_columnas(datos):
+    """Verifica si el DataFrame contiene las columnas necesarias."""
+    return all(columna in datos.columns for columna in COLUMNAS_NECESARIAS)
+
+
+def procesar_archivo(archivo_subido):
+    """
+    Procesa el archivo Excel subido y genera los gráficos.
+    
+    Permite hasta 3 intentos si el archivo no contiene las columnas correctas.
+    """
+    if archivo_subido is None:
+        print("No se subió ningún archivo.")
+        return
+    
+    try:
+        intentos = 0
+        archivo_valido = False
+        
+        while intentos < MAX_INTENTOS and not archivo_valido:
+            datos = pd.read_excel(archivo_subido)
+            
+            if validar_columnas(datos):
+                archivo_valido = True
+            else:
+                intentos += 1
+                st.warning(
+                    f"Archivo no válido. Intento {intentos} de "
+                    f"{MAX_INTENTOS}. Verifica las columnas."
+                )
+                
+                if intentos == MAX_INTENTOS:
+                    st.error(
+                        "Número máximo de intentos alcanzado. "
+                        "Verifica tu archivo."
+                    )
+                    return
+        
+        print(datos)
+        mostrar_datos_y_grafico(datos)
+        
+    except Exception as error:
+        st.error(f"Ocurrió un error: {error}")
+
+
+def main():
+    """Función principal que ejecuta la aplicación."""
+    configurar_pagina()
+    
+    archivo_subido = st.file_uploader(
+        "Selecciona un archivo Excel",
+        type=["xlsx", "xls"]
+    )
+    
+    procesar_archivo(archivo_subido)
+
+main()
